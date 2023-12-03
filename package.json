@@ -1,0 +1,35 @@
+{
+  "name": "@toridoriv/template-string",
+  "description": "A simple template constructor for my JavaScript and TypeScript projects.",
+  "version": "0.1.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/toridoriv/template-string.git"
+  },
+  "type": "module",
+  "files": [
+    "./lib/*",
+    "./typings/*"
+  ],
+  "displayName": "Template String",
+  "homepage": "https://github.com/toridoriv/template-string",
+  "author": {
+    "name": "Tori Rodriguez",
+    "email": "vrodriguezfe@icloud.com",
+    "url": "https://github.com/toridoriv"
+  },
+  "bugs": {
+    "url": "https://github.com/toridoriv/template-string/issues"
+  },
+  "scripts": {
+    "precoverage": "npm run test:cov",
+    "coverage": "deno coverage --unstable --exclude='test\\.(js|mjs|ts|jsx|tsx)$|/test/' coverage",
+    "test": "ENVIRONMENT=test deno test --allow-all --unstable --config=deno.json",
+    "pretest:cov": "rm -rf coverage",
+    "test:cov": "npm test -- --coverage=coverage"
+  },
+  "devDependencies": {
+    "@homer0/prettier-plugin-jsdoc": "^8.0.0",
+    "prettier": "3.1.0"
+  }
+}
