@@ -82,6 +82,22 @@ export type DeepPartial<T> = T extends NativeObject
 export type Expand<T> = T extends infer O ? { [K in keyof O]: O[K] } : never;
 
 /**
+ * Calculates the length of a string or array type `T`.
+ *
+ * If `T` extends `string`, recursively splits it into characters and counts the length.
+ *
+ * If `T` has a `length` property, returns the type of that property.
+ *
+ * Otherwise returns `never`.
+ *
+ * @param {T} -  The type to split.
+ */
+export type GetLength<T> = T extends string
+  ? GetLength<Split<T, "">>
+  : T extends { length: infer L }
+    ? L
+    : never;
+/**
  * Takes a union type `U` and extracts the last type in the union.
  *
  * @param U  - The union type from which to extract the last type.
@@ -141,6 +157,22 @@ export type ReplaceAll<
  */
 // deno-lint-ignore no-explicit-any
 export type SafeAny = any;
+
+/**
+ * Splits a string `S` into substrings separated by `SEP`.
+ *
+ * This is a type-level implementation of `String.split()`.
+ *
+ * @param S    - The string to split.
+ * @param SEP  - The separator string to split on.
+ */
+export type Split<S extends string, SEP extends string> = string extends S
+  ? string[]
+  : S extends `${infer A}${SEP}${infer B}`
+    ? [A, ...(B extends "" ? [] : Split<B, SEP>)]
+    : SEP extends ""
+      ? []
+      : [S];
 
 /**
  * Takes a union type `U` and transforms it into an intersection type.
