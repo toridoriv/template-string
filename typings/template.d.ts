@@ -24,17 +24,16 @@ import type { Expand, ObjectEntries, ReplaceAll, UnionToTuple } from "./utils.d.
 
 export as namespace Template;
 
-/**
- * Type mapping string template placeholders to their possible replacement values.
- */
-export type Replacements<T extends string> = Expand<{
-  [K in ExtractTemplatePlaceholders<T>[number]]: string | number | boolean;
-}>;
-
-/**
- * Same as {@link Template.Replacements} but all properties are marked as optional.
- */
-export type PartialReplacements<T extends string> = Partial<Replacements<T>>;
+export type ApplyReplacement<
+  T extends string,
+  StartTag extends string,
+  EndTag extends string,
+  Rep extends ReplacementPair,
+  Cache extends string = T,
+  Templates extends string[] = ExtractPlaceholdersInText<Cache, StartTag, EndTag>,
+> = Rep[0] extends Templates[number]
+  ? ReplaceAll<T, `${StartTag}${Rep[0]}${EndTag}`, `${Rep[1]}`>
+  : T;
 
 /**
  * Represents the application of replacements to a template string.
@@ -44,61 +43,78 @@ export type PartialReplacements<T extends string> = Partial<Replacements<T>>;
  * @param T  - A template string.
  * @param R  - An object containing key-value pairs.
  */
-export type ApplyReplacements<T extends string, R> = UnionToTuple<
-  ObjectEntries<R>
-> extends ReplacementPair[]
-  ? ReplaceAllInTemplate<T, UnionToTuple<ObjectEntries<R>>>
+export type ApplyReplacements<
+  T extends string,
+  StartTag extends string,
+  EndTag extends string,
+  R,
+> = UnionToTuple<ObjectEntries<R>> extends ReplacementPair[]
+  ? ReplaceAllPlaceholders<T, StartTag, EndTag, UnionToTuple<ObjectEntries<R>>>
   : T;
 
-/**
- * @ignore
- */
-type ExtractTemplatePlaceholders<
+export type ExtractPlaceholdersInText<
   T extends string,
+  StartTag extends string,
+  EndTag extends string,
   Cache extends string[] = [],
-> = T extends MultiPlaceholderTemplate
-  ? T extends `${string}{${infer S}}${infer Rest}`
-    ? ExtractTemplatePlaceholders<Rest, [...Cache, S]>
+> = T extends TextWithPlaceholders<Placeholder<StartTag, EndTag>>
+  ? T extends `${string}${StartTag}${infer S}${EndTag}${infer Rest}`
+    ? ExtractPlaceholdersInText<Rest, StartTag, EndTag, [...Cache, S]>
     : Cache
   : Cache;
 
 /**
- * @ignore
+ * Same as {@link Template.Replacements} but all properties are marked as optional.
  */
-type ReplacementPair = [string, string | number | boolean];
+export type PartialReplacements<
+  T extends string,
+  StartTag extends string,
+  EndTag extends string,
+> = Partial<Replacements<T, StartTag, EndTag>>;
+
+export type Placeholder<S extends string, E extends string> = `${S}${string}${E}`;
 
 /**
- * @ignore
+ * Type mapping string template placeholders to their possible replacement values.
  */
-type ApplyReplacementToTemplate<
+export type Replacements<
   T extends string,
-  Rep extends ReplacementPair,
-  Cache extends string = T,
-  Templates extends string[] = ExtractTemplatePlaceholders<Cache>,
-> = Rep[0] extends Templates[number] ? ReplaceAll<T, `{${Rep[0]}}`, `${Rep[1]}`> : T;
+  StartTag extends string,
+  EndTag extends string,
+> = Expand<{
+  [K in ExtractPlaceholdersInText<T, StartTag, EndTag>[number]]:
+    | string
+    | number
+    | boolean;
+}>;
 
-/**
- * @ignore
- */
-type ReplaceAllInTemplate<
+export type TextWithPlaceholders<P extends AnyPlaceholder> = `${string}${P}${string}`;
+
+type AnyPlaceholder = Placeholder<string, string>;
+
+type ReplaceAllPlaceholders<
   T extends string,
+  StartTag extends string,
+  EndTag extends string,
   Rep extends ReplacementPair[],
 > = Rep["length"] extends 0
   ? T
   : Rep extends [infer F, ...infer R]
     ? F extends ReplacementPair
       ? R extends ReplacementPair[]
-        ? ReplaceAllInTemplate<ApplyReplacementToTemplate<T, F>, R>
-        : ReplaceAllInTemplate<ApplyReplacementToTemplate<T, F>, []>
+        ? ReplaceAllPlaceholders<
+            ApplyReplacement<T, StartTag, EndTag, F>,
+            StartTag,
+            EndTag,
+            R
+          >
+        : ReplaceAllPlaceholders<
+            ApplyReplacement<T, StartTag, EndTag, F>,
+            StartTag,
+            EndTag,
+            []
+          >
       : T
     : T;
 
-/**
- * @ignore
- */
-type SinglePlaceholderTemplate = `{${string}}`;
-
-/**
- * @ignore
- */
-type MultiPlaceholderTemplate = `${string}${SinglePlaceholderTemplate}${string}`;
+type ReplacementPair = [string, string | number | boolean];
