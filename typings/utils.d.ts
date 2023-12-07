@@ -76,7 +76,7 @@ export type DeepPartial<T> = T extends NativeObject
 /**
  * Takes a type `T` and expands it into an object type with the same properties as `T`.
  *
- * @param T  - The type to be expanded.
+ * @template T  - The type to be expanded.
  * @see {@link https://stackoverflow.com/a/69288824/62937 Source}
  */
 export type Expand<T> = T extends infer O ? { [K in keyof O]: O[K] } : never;
@@ -90,7 +90,7 @@ export type Expand<T> = T extends infer O ? { [K in keyof O]: O[K] } : never;
  *
  * Otherwise returns `never`.
  *
- * @param {T} -  The type to split.
+ * @template {T} -  The type to split.
  */
 export type GetLength<T> = T extends string
   ? GetLength<Split<T, "">>
@@ -102,7 +102,7 @@ export type GetLength<T> = T extends string
 /**
  * Takes a union type `U` and extracts the last type in the union.
  *
- * @param U  - The union type from which to extract the last type.
+ * @template U  - The union type from which to extract the last type.
  */
 export type LastInUnion<U> = UnionToIntersection<
   U extends unknown ? (x: U) => 0 : never
@@ -117,7 +117,7 @@ export type NativeObject = Date | String | Number | Function;
  * Takes an object type `T` and transforms it into an array of key-value pairs,
  * where each value has `undefined` removed.
  *
- * @param T  - The object type from which to extract key-value pairs.
+ * @template T  - The object type from which to extract key-value pairs.
  */
 export type ObjectEntries<T> = {
   [K in keyof T]-?: [K, RemoveUndefined<T[K]>];
@@ -131,7 +131,7 @@ export type Primitive = string | number | null | undefined | boolean;
 /**
  * Takes a type `T` and removes the `undefined` type from its properties.
  *
- * @param T  - The type from which to remove `undefined`.
+ * @template T  - The type from which to remove `undefined`.
  */
 export type RemoveUndefined<T> = [T] extends [undefined] ? T : Exclude<T, undefined>;
 
@@ -139,9 +139,9 @@ export type RemoveUndefined<T> = [T] extends [undefined] ? T : Exclude<T, undefi
  * Takes a string `S` and replaces all occurrences of substring `From` with substring
  * `To`.
  *
- * @param S     - The string in which to perform replacements.
- * @param From  - The substring to be replaced.
- * @param To    - The substring to replace occurrences of `From`.
+ * @template S     - The string in which to perform replacements.
+ * @template From  - The substring to be replaced.
+ * @template To    - The substring to replace occurrences of `From`.
  */
 export type ReplaceAll<
   S extends string,
@@ -165,8 +165,8 @@ export type SafeAny = any;
  *
  * This is a type-level implementation of `String.split()`.
  *
- * @param S    - The string to split.
- * @param SEP  - The separator string to split on.
+ * @template S    - The string to split.
+ * @template SEP  - The separator string to split on.
  */
 export type Split<S extends string, SEP extends string> = string extends S
   ? string[]
@@ -179,7 +179,7 @@ export type Split<S extends string, SEP extends string> = string extends S
 /**
  * Takes a union type `U` and transforms it into an intersection type.
  *
- * @param U  - The union type to be transformed.
+ * @template U  - The union type to be transformed.
  */
 export type UnionToIntersection<U> = (U extends unknown ? (arg: U) => 0 : never) extends (
   arg: infer I,
@@ -190,7 +190,7 @@ export type UnionToIntersection<U> = (U extends unknown ? (arg: U) => 0 : never)
 /**
  * Takes a union type `U` and transforms it into a tuple type.
  *
- * @param U  - The union type to be transformed into a tuple.
+ * @template U  - The union type to be transformed into a tuple.
  */
 export type UnionToTuple<U, Last = LastInUnion<U>> = [U] extends [never]
   ? []
