@@ -17,7 +17,6 @@
   "jsdocEnsureDescriptionsAreSentences": true,
   "jsdocExperimentalFormatCommentsWithoutTags": true,
   "jsdocTagsOrder": [
-    "type",
     "typedef",
     "callback",
     "function",
@@ -29,6 +28,7 @@
     "classdesc",
     "example",
     "template",
+    "type",
     "param",
     "property",
     "returns",
