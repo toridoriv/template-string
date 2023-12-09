@@ -124,9 +124,14 @@ export type ObjectEntries<T> = {
 }[keyof T];
 
 /**
+ * Represents a value that can be null or undefined.
+ */
+export type Nullable = null | undefined;
+
+/**
  * Represents a primitive value.
  */
-export type Primitive = string | number | null | undefined | boolean;
+export type Primitive = string | number | boolean | Nullable;
 
 /**
  * Takes a type `T` and removes the `undefined` type from its properties.
@@ -505,3 +510,108 @@ export type Subtract<X extends number, Y extends number> = ArePositiveIntegers<
  * @template B  - The second positive integer to be multiplied.
  */
 export type Multiply<A extends number, B extends number> = RepeatAddition<A, 0, B>;
+
+/**
+ * Surrounds a string with specified start and end strings.
+ *
+ * @template S      - The string to be surrounded.
+ * @template Start  - The start string.
+ * @template End    - The end string.
+ */
+export type Surround<
+  S extends string,
+  Start extends string,
+  End extends string,
+> = `${Start}${S}${End}`;
+
+/**
+ * Unwraps a string by removing specified start and end strings.
+ *
+ * @template S      - The string to unwrap.
+ * @template Start  - The start string.
+ * @template End    - The end string.
+ */
+export type Unwrap<
+  S extends string,
+  Start extends string,
+  End extends string,
+> = S extends `${Start}${infer W}${End}` ? `${W}` : S;
+
+/**
+ * Unwraps all strings in an array by removing specified start and end strings.
+ *
+ * @template S      - The array of strings to unwrap.
+ * @template Start  - The start string.
+ * @template End    - The end string.
+ * @template Cache  - Internal cache array to store unwrapped strings (optional,
+ *                  initialized to an empty array by default).
+ */
+export type UnwrapAll<
+  S extends SafeAny[],
+  Start extends string,
+  End extends string,
+  Cache extends string[] = [],
+> = IsEmpty<S> extends true
+  ? Cache
+  : S extends [infer F, ...infer R]
+    ? F extends string
+      ? UnwrapAll<R, Start, End, Push<Cache, Unwrap<F, Start, End>>>
+      : UnwrapAll<R, Start, End, Cache>
+    : Cache;
+
+/**
+ * Finds all occurrences of a substring within a string.
+ *
+ * @template S       - The string to search within.
+ * @template ToFind  - The substring to find.
+ * @template Cache   - Internal cache array to store occurrences (optional,
+ *                   initialized to an empty array by default).
+ */
+export type FindAll<
+  S extends string,
+  ToFind extends string,
+  Cache extends string[] = [],
+> = S extends `${infer B}${ToFind}${infer E}`
+  ? FindAll<`${B}${E}`, ToFind, Push<Cache, ToFind>>
+  : Cache;
+
+/**
+ * Checks if a string includes multiple occurrences of a substring.
+ *
+ * @template S       - The string to check.
+ * @template ToFind  - The substring to find.
+ */
+export type IncludesMany<S extends string, ToFind extends string> = GetLength<
+  FindAll<S, ToFind>
+> extends 1
+  ? false
+  : true;
+
+/**
+ * Gets all substrings surrounded by specified start and end strings.
+ *
+ * @template S      - The string to search within.
+ * @template Start  - The start string.
+ * @template End    - The end string.
+ * @template Cache  - Internal cache array to store surrounded substrings (optional,
+ *                  initialized to an empty array by default).
+ */
+export type GetAllSurrounded<
+  S extends string,
+  Start extends string,
+  End extends string,
+  Cache extends string[] = [],
+> = S extends ""
+  ? Cache
+  : S extends `${string}${Start}${infer W}${End}${infer Rest}`
+    ? IncludesMany<Surround<`${W}`, Start, End>, Start> extends true
+      ? GetAllSurrounded<`${Rest}`, Start, End, Cache>
+      : IncludesMany<Surround<`${W}`, Start, End>, End> extends true
+        ? GetAllSurrounded<`${Rest}`, Start, End, Cache>
+        : GetAllSurrounded<
+            `${Rest}`,
+            Start,
+            End,
+            Push<Cache, Surround<`${W}`, Start, End>>
+          >
+    : Cache;
