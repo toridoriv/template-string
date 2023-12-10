@@ -9,6 +9,7 @@
   "tabWidth": 2,
   "trailingComma": "all",
   "plugins": ["@homer0/prettier-plugin-jsdoc"],
+  "jsdocUseTypeScriptTypesCasing": false,
   "jsdocIndentFormattedExamples": false,
   "jsdocFormatExamples": false,
   "jsdocFormatStringLiterals": true,
