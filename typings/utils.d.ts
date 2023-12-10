@@ -45,35 +45,6 @@ export type MergingStrategy = "replace" | "merge";
 export type AnyArray = Array<SafeAny>;
 
 /**
- * Represents an object type where the keys can be either strings or numbers, and the
- * values are any type.
- *
- * This is useful for representing loose object types where the keys and values are not
- * known ahead of time.
- */
-export type AnyRecord = {
-  [key: PropertyKey]: AnyRecordValue;
-};
-
-/**
- * Represents the possible values for keys in the {@link AnyRecord} type. Can be a
- * primitive, an array of primitives or other records, or another record. Allows
- * nested/recursive records.
- */
-export type AnyRecordValue = Primitive | Array<Primitive | AnyRecord> | AnyRecord;
-
-/**
- * Makes all properties in T optional.
- */
-export type DeepPartial<T> = T extends NativeObject
-  ? T
-  : T extends AnyRecord
-    ? {
-        [P in keyof T]?: DeepPartial<T[P]>;
-      }
-    : T;
-
-/**
  * Takes a type `T` and expands it into an object type with the same properties as `T`.
  *
  * @template T  - The type to be expanded.
@@ -110,19 +81,6 @@ export type LastInUnion<U> = UnionToIntersection<
   ? L
   : never;
 
-// deno-lint-ignore ban-types
-export type NativeObject = Date | String | Number | Function;
-
-/**
- * Takes an object type `T` and transforms it into an array of key-value pairs,
- * where each value has `undefined` removed.
- *
- * @template T  - The object type from which to extract key-value pairs.
- */
-export type ObjectEntries<T> = {
-  [K in keyof T]-?: [K, RemoveUndefined<T[K]>];
-}[keyof T];
-
 /**
  * Represents a value that can be null or undefined.
  */
@@ -132,13 +90,6 @@ export type Nullable = null | undefined;
  * Represents a primitive value.
  */
 export type Primitive = string | number | boolean | Nullable;
-
-/**
- * Takes a type `T` and removes the `undefined` type from its properties.
- *
- * @template T  - The type from which to remove `undefined`.
- */
-export type RemoveUndefined<T> = [T] extends [undefined] ? T : Exclude<T, undefined>;
 
 /**
  * Takes a string `S` and replaces all occurrences of substring `From` with substring
@@ -469,7 +420,7 @@ export type SplitByLength<
   : T extends [...infer Items]
     ? IsEmpty<Items> extends true
       ? Cache
-      : SplitByLength<Slice<Items, L>, L, [...Cache, Join<Slice<Items, 0, L>, "">]>
+      : SplitByLength<Slice<Items, L>, L, Push<Cache, Join<Slice<Items, 0, L>, "">>>
     : never;
 
 /**
@@ -576,16 +527,26 @@ export type FindAll<
   : Cache;
 
 /**
- * Checks if a string includes multiple occurrences of a substring.
+ * Checks if the length of the given type `T` is equal to the specified length `L`.
+ * Supports strings and arrays.
  *
- * @template S       - The string to check.
- * @template ToFind  - The substring to find.
+ * @template T  - The type to check for length equality.
+ * @template L  - The expected length.
  */
-export type IncludesMany<S extends string, ToFind extends string> = GetLength<
-  FindAll<S, ToFind>
-> extends 1
-  ? false
-  : true;
+export type HasSameLength<T, L extends number> = T extends string
+  ? HasSameLength<Split<T, "">, L>
+  : T extends AnyArray
+    ? IsEqual<GetLength<T>, L> extends true
+      ? true
+      : false
+    : never;
+
+/**
+ * Extracts the first character of a string type `T`.
+ *
+ * @template T  - The string type from which to extract the first character.
+ */
+export type GetFirstChar<T extends string> = T extends `${infer F}${string}` ? F : string;
 
 /**
  * Gets all substrings surrounded by specified start and end strings.
@@ -600,18 +561,43 @@ export type GetAllSurrounded<
   S extends string,
   Start extends string,
   End extends string,
+  StartLen extends number = GetLength<Start>,
+  EndLen extends number = GetLength<End>,
   Cache extends string[] = [],
 > = S extends ""
   ? Cache
   : S extends `${string}${Start}${infer W}${End}${infer Rest}`
-    ? IncludesMany<Surround<`${W}`, Start, End>, Start> extends true
-      ? GetAllSurrounded<`${Rest}`, Start, End, Cache>
-      : IncludesMany<Surround<`${W}`, Start, End>, End> extends true
-        ? GetAllSurrounded<`${Rest}`, Start, End, Cache>
+    ? HasSameLength<
+        FindAll<Surround<`${W}`, Start, End>, GetFirstChar<Start>>,
+        StartLen
+      > extends false
+      ? GetAllSurrounded<`${Rest}`, Start, End, StartLen, EndLen, Cache>
+      : HasSameLength<
+            FindAll<Surround<`${W}`, Start, End>, GetFirstChar<End>>,
+            EndLen
+          > extends false
+        ? GetAllSurrounded<`${Rest}`, Start, End, StartLen, EndLen, Cache>
         : GetAllSurrounded<
             `${Rest}`,
             Start,
             End,
+            StartLen,
+            EndLen,
             Push<Cache, Surround<`${W}`, Start, End>>
           >
     : Cache;
+
+/**
+ * Extracts the values of the properties in the given type `T` and represents them as a
+ * union type.
+ *
+ * @template T  - The type with properties from which to extract values.
+ */
+export type ValueOf<T> = T[keyof T];
+
+/**
+ * Extracts and represents the values of properties in the given type `T` as a tuple type.
+ *
+ * @template T  - The type with properties from which to extract values.
+ */
+export type GetValues<T> = UnionToTuple<ValueOf<T>>;
