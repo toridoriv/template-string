@@ -1,5 +1,3 @@
-import type { Expand, ObjectEntries, ReplaceAll, UnionToTuple } from "./utils.d.ts";
-
 /**
  * @file `TemplateString` related type definitions.
  * @author Tori Rodriguez <vrodriguezfe@icloud.com>
@@ -21,100 +19,112 @@ import type { Expand, ObjectEntries, ReplaceAll, UnionToTuple } from "./utils.d.
  *          You should have received a copy of the GNU General Public License along
  *          with this program. If not, @see {@link https://www.gnu.org/licenses}
  */
-
 export as namespace Template;
 
-export type ApplyReplacement<
-  T extends string,
-  StartTag extends string,
-  EndTag extends string,
-  Rep extends ReplacementPair,
-  Cache extends string = T,
-  Templates extends string[] = ExtractPlaceholdersInText<Cache, StartTag, EndTag>,
-> = Rep[0] extends Templates[number]
-  ? ReplaceAll<T, `${StartTag}${Rep[0]}${EndTag}`, `${Rep[1]}`>
-  : T;
+import {
+  Expand,
+  GetAllSurrounded,
+  IsEmpty,
+  Nullable,
+  Primitive,
+  ReplaceAll,
+  Unwrap,
+  GetValues,
+} from "./utils.d.ts";
 
 /**
- * Represents the application of replacements to a template string.
- * It takes a template string (`T`) and a set of replacements (`R`) and produce a new
- * string with the specified replacements applied.
+ * Type alias for the placeholder tag pair.
  *
- * @param T  - A template string.
- * @param R  - An object containing key-value pairs.
+ * Placeholder tags are represented as a tuple of two strings - the opening and closing
+ * tag.
+ */
+export type AnyPlaceholderTags = [string, string];
+
+/**
+ * Applies a replacement to a specific placeholder in the given string.
+ *
+ * @template S            - The original string.
+ * @template Placeholder  - The placeholder tag to replace.
+ * @template Value        - The value to replace the placeholder with.
+ */
+export type ApplyReplacement<
+  S extends string,
+  Placeholder extends string,
+  Value,
+> = Value extends Nullable
+  ? S
+  : Value extends NonNullable<Primitive>
+    ? ReplaceAll<S, Placeholder, `${Value}`>
+    : S;
+
+/**
+ * Applies multiple replacements to placeholders in the given string.
+ *
+ * @template S     - The original string.
+ * @template Tags  - The placeholder tags.
+ * @template R     - The replacement values for each placeholder.
+ * @template P     - The list of placeholders in the string.
  */
 export type ApplyReplacements<
-  T extends string,
-  StartTag extends string,
-  EndTag extends string,
-  R,
-> = UnionToTuple<ObjectEntries<R>> extends ReplacementPair[]
-  ? ReplaceAllPlaceholders<T, StartTag, EndTag, UnionToTuple<ObjectEntries<R>>>
-  : T;
-
-export type ExtractPlaceholdersInText<
-  T extends string,
-  StartTag extends string,
-  EndTag extends string,
-  Cache extends string[] = [],
-> = T extends TextWithPlaceholders<Placeholder<StartTag, EndTag>>
-  ? T extends `${string}${StartTag}${infer S}${EndTag}${infer Rest}`
-    ? ExtractPlaceholdersInText<Rest, StartTag, EndTag, [...Cache, S]>
-    : Cache
-  : Cache;
-
-/**
- * Same as {@link Template.Replacements} but all properties are marked as optional.
- */
-export type PartialReplacements<
-  T extends string,
-  StartTag extends string,
-  EndTag extends string,
-> = Partial<Replacements<T, StartTag, EndTag>>;
-
-export type Placeholder<S extends string, E extends string> = `${S}${string}${E}`;
+  S extends string,
+  Tags extends AnyPlaceholderTags,
+  R extends Partial<Replacements<S, Tags>>,
+  P extends string[] = Placeholders<S, Tags>,
+> = IsEmpty<P> extends true
+  ? S
+  : P extends [infer F, ...infer Rest]
+    ? F extends string
+      ? Unwrap<F, Tags[0], Tags[1]> extends keyof R
+        ? Rest extends string[]
+          ? ApplyReplacements<
+              ApplyReplacement<S, F, R[Unwrap<F, Tags[0], Tags[1]>]>,
+              Tags,
+              R,
+              Rest
+            >
+          : ApplyReplacement<S, F, R[Unwrap<F, Tags[0], Tags[1]>]>
+        : Rest extends string[]
+          ? ApplyReplacements<S, Tags, R, Rest>
+          : S
+      : Rest extends string[]
+        ? ApplyReplacements<S, Tags, R, Rest>
+        : S
+    : S;
 
 /**
- * Type mapping string template placeholders to their possible replacement values.
+ * Extracts all placeholders surrounded by the specified start and end tags in a given
+ * string.
+ *
+ * @template S     - The string to search within.
+ * @template Tags  - The placeholder tags.
  */
-export type Replacements<
-  T extends string,
-  StartTag extends string,
-  EndTag extends string,
+export type Placeholders<
+  S extends string,
+  Tags extends AnyPlaceholderTags,
+> = string extends S ? string[] : GetAllSurrounded<S, Tags[0], Tags[1]>;
+
+/**
+ * Maps each placeholder in the string to the corresponding property name it will have in
+ * the replacements object. The placeholders are extracted based on the specified start
+ * and end tags.
+ *
+ * @template S     - The original string.
+ * @template Tags  - The placeholder tags.
+ */
+export type PlaceholderPropertyMap<
+  S extends string,
+  Tags extends AnyPlaceholderTags,
 > = Expand<{
-  [K in ExtractPlaceholdersInText<T, StartTag, EndTag>[number]]:
-    | string
-    | number
-    | boolean;
+  [K in GetAllSurrounded<S, Tags[0], Tags[1]>[number]]: Unwrap<K, Tags[0], Tags[1]>;
 }>;
 
-export type TextWithPlaceholders<P extends AnyPlaceholder> = `${string}${P}${string}`;
-
-type AnyPlaceholder = Placeholder<string, string>;
-
-type ReplaceAllPlaceholders<
-  T extends string,
-  StartTag extends string,
-  EndTag extends string,
-  Rep extends ReplacementPair[],
-> = Rep["length"] extends 0
-  ? T
-  : Rep extends [infer F, ...infer R]
-    ? F extends ReplacementPair
-      ? R extends ReplacementPair[]
-        ? ReplaceAllPlaceholders<
-            ApplyReplacement<T, StartTag, EndTag, F>,
-            StartTag,
-            EndTag,
-            R
-          >
-        : ReplaceAllPlaceholders<
-            ApplyReplacement<T, StartTag, EndTag, F>,
-            StartTag,
-            EndTag,
-            []
-          >
-      : T
-    : T;
-
-type ReplacementPair = [string, string | number | boolean];
+/**
+ * Defines a set of replacement values for each placeholder in the string.
+ *
+ * @template S     - The original string.
+ * @template Tags  - The placeholder tags.
+ */
+export type Replacements<S extends string, Tags extends AnyPlaceholderTags> = Expand<{
+  // @ts-ignore: ¯\_(ツ)_/¯
+  [K in GetValues<PlaceholderPropertyMap<S, Tags>>[number]]: Primitive;
+}>;
