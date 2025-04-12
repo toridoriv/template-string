@@ -7,11 +7,11 @@
   },
   "deno.cacheOnSave": true,
   "deno.enable": true,
-  "deno.unstable": false,
+  "deno.unstable": [],
   "deno.codeLens.references": true,
   "editor.codeActionsOnSave": {
-    "source.fixAll": true,
-    "source.organizeImports": true
+    "source.fixAll": "explicit",
+    "source.organizeImports": "explicit"
   },
   "editor.formatOnSave": true,
   "editor.rulers": [90],

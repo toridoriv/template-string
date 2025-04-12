@@ -2,5 +2,5 @@
   "compilerOptions": {
     "checkJs": true
   },
-  "nodeModulesDir": false
+  "nodeModulesDir": "auto"
 }
